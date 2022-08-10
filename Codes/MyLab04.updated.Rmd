@@ -1,0 +1,198 @@
+---
+title: "Lab04 - Previsão de Churn com Regressão Logística"
+author: "Thalles Quinaglia Liduares"
+date: "2022-08-10"
+output:
+subtitle: Machine Learning usando o R
+---
+
+### Exercicio proposto 
+
+Na Seção 02 do nosso Curso de Machine Learning usando o `R` exploramos o data set
+`Telco-Customer-Churn.csv` que fazia referência a dados de uma operadora de telecomunicações.
+Dentro do data set, havia uma variável qualitativa que media `churn`. Com base nesse data set,
+pede-se que você construa um modelo de regressão logística que explique a probabilidade de
+churn dentro desse conjunto de dados.
+
+Upload dados
+
+```{r, warning=FALSE, message=FALSE}
+
+setwd("C:\\Program Files\\R\\Dados")
+
+data<-read.csv(file="Telco-Customer-Churn.csv", stringsAsFactors = TRUE)
+
+attach(data)
+
+```
+
+
+### Upload pacotes
+
+```{r, warning=FALSE, message=FALSE}
+
+
+library(DescTools)
+library(gtsummary)
+library(caTools)
+library(caret)
+library(car)
+library(plyr)
+```
+
+### Analise exploratória dos dados 
+
+Como demonstrado pelos valores descritos abaixo, a taxa de cancelamento dos serviços de telefonia
+é de aproximadamente 27\% para mulheres e 26.1\% para homens.
+
+```{r}
+
+table(Churn, gender)
+
+```
+
+# Análise de existência de multicolinearidade
+
+```{r, warning=FALSE, message=FALSE}
+
+data1<-data[,-1] # Exclusão do ID dos clientes
+
+reg1<-lm(as.numeric(Churn)~., data1)
+
+#car::vif(reg1)
+
+```
+
+A mensagem de erro acima é um indicativo de existência de multicolinearidade. Portanto, existe correlação perfeita entre algumas variaveis da base de dados.
+
+
+Serão inclusas no modelo as seguintes variáveis, em seguida será analisada o VIF para o teste de multicolinearidade.
+
+```{r}
+
+reg2<-lm(as.numeric(Churn)~MonthlyCharges+tenure+gender+PhoneService+Dependents
+         +Contract)
+
+car::vif(reg2)
+
+```
+
+Os respectivos valores de VIF variam de 1.00 a 2.22, logo, há evidências de ausência de multicolinearidade.
+
+
+### Partição da amostra entre 80\% treino e 20\% teste
+
+
+```{r}
+
+set.seed(111)
+
+part_data<-floor(0.80*nrow(data)) 
+
+treino_data <-sample(seq_len(nrow(data)), size = part_data)
+
+treino<-data[treino_data, ]
+
+teste<-data[-treino_data,]
+
+```
+
+### Regressão logistica
+
+
+```{r}
+
+reg_log<-glm(Churn~gender+Dependents+MonthlyCharges+tenure+Contract+PhoneService,
+           family = binomial(link="logit"),
+           data=treino)
+
+summary(reg_log)
+
+```
+O gênero dos individuos não possui significância estatística para explicar a ocorrência de _Churn_, ao passo que as demais variáveis explicativas consideradas na regressão apresentam significância estatística.
+
+
+### Analise preditiva do modelo
+
+
+```{r}
+
+pred_reg_log<-predict(reg_log, newdata=teste, type = 'response')
+
+```
+
+
+### Ajuste do modelo
+
+```{r}
+
+PseudoR2<-DescTools::PseudoR2(reg_log, which="Nagelkerke")
+
+round(PseudoR2,3)*100
+
+```
+
+O Pseudo $R^2$ é igual a 37.6\%.
+
+### Teste Anova
+
+```{r}
+
+car::Anova(reg_log,type="II", test="Wald")
+
+```
+
+
+Os coeficientes no modelo de regressão logistica não são diretamente interpretáveis. Logo, obtém-se as razões de chances com IC 95%.
+
+```{r}
+
+exp(coef(reg_log))
+
+exp(confint(reg_log))
+
+```
+
+### Plot da tabela de resultados
+
+```{r}
+
+gtsummary::tbl_regression(reg_log, exponentiate=TRUE)
+                            
+```
+
+
+
+### Curva ROC
+
+
+```{r}
+
+reg_AUC<-colAUC(pred_reg_log, teste$Churn, plotROC = TRUE)
+abline(h=reg_AUC, col='green')
+text(.2,.9, cex=.8, labels=paste("Ponto de corte otimo:", round(reg_AUC,2)))
+
+```
+
+
+Com base no ponto de corte ótimo estimado irei plotar a _Confusion Matrix_ para analise de acurácia do modelo.
+
+
+
+```{r}
+
+Churn_prob<-ifelse(pred_reg_log>0.82,1,0)
+
+Churn_class<-factor(Churn_prob)
+
+
+teste$Churn<-as.factor(mapvalues(teste$Churn, from=c("No","Yes"), to=c(0,1)))
+
+confusionMatrix(Churn_class, teste$Churn)
+
+```
+
+
+O modelo de regressão logistica proposto nesta análise aponta para ocorrência de _Churn_ em 369 casos dentre um total de 1409 com nível de acurácia igual a 73.8%. 
+
+
