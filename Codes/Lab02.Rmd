@@ -1,0 +1,89 @@
+---
+title: "Lab02 - Análise Exploratória de Dados com o `R`"
+subtitle: "Machine Learning com R"
+author: "Thalles Quinaglia Liduares"
+date: "2022-08-01"
+output: html_document
+---
+
+Upload dos dados 
+
+```{r}
+
+price = as.numeric(read.csv2('http://bit.ly/2AcWxsr', header=T,
+sep=',', dec='.')$price)
+
+```
+
+**Verifique o valor mínimo, máximo, a média, mediana, o primeiro e terceiro quartil dos dados;**
+
+A função `summary` fornece as principais estatísticas descritivas do conjunto de dados
+
+
+```{r}
+
+summary(price)
+
+```
+**Qual o preço mais frequente nesse conjunto de dados?** 
+
+```{r}
+
+as.numeric(names(which(table(price)==max(table(price)))))
+```
+O preço mais frequente no conjunto de dados é igual a $12995 
+
+**Calcule o IQR**
+
+O IQR, que representa a dispersão dos dados em torno de uma medida de centralidade 
+(2° e 3° quartis) é igual a $3909.5.
+
+```{r}
+
+IQR(price)
+
+```
+**Construa o boxplot e histograma**
+
+```{r}
+par(mfrow=c(1,2)) 
+
+boxplot(price,
+        main='Boxplot',
+        horizontal = T)
+
+hist(price,
+     main="Histograma ",
+     xlab="Preço",
+     ylab="Densidade",
+     prob=T
+     )
+
+lines(density(price),lwd=3,col='green')
+```
+
+
+**Qual o formato da distribuição desse conjunto de dados?**
+
+Pela forma do histograma, percebe-se que há uma assimetria a esquerda, dado que a
+mediana é maior do que a média. 
+
+**Calcule a variância e o desvio-padrão do seu conjunto de dados**
+
+
+```{r}
+
+dados<-c(round(var(price),2), round(sd(price),2))
+
+dados
+
+```
+
+Dados estes números, o conjunto de dados de preços de automóveis apresenta uma 
+elevada variabilidade.
+
+**Qual o intervalo de preços mais provável de ser encontrado nesse conjunto de dados?**
+
+Com base nas estatisticas descritivas e gráficos analisados nos itens acima, pode-se 
+constatar que o intervalo mais provavel de preços de automoveis situa-se entre 
+\$12500 e \$15000.
