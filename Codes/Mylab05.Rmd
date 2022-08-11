@@ -1,0 +1,75 @@
+---
+title: "Lab 05 - Classificação usando algoritmos k-NN"
+subtitle: "Machine Learning com o R - Análise Macro "
+author: "Thalles Quinaglia Liduares"
+date: "2022-08-11"
+output: html_document
+---
+
+### Upload pacotes 
+
+```{r, warning=F, message=F}
+
+library(caret)
+library(class)
+
+```
+
+### Upload dados 
+
+```{r, warning=F, message=F}
+
+setwd("C:\\Program Files\\R\\Dados")
+
+database<-read.csv(file="wisc_bc_data.csv", stringsAsFactors = F)
+
+attach(database)
+
+data<-database[,-1] # Remover coluna ID
+
+```
+
+### Normalização dos dados
+
+```{r}
+
+data[,2:31]<-scale(data[,2:31])
+
+```
+
+### Divisão dos dados entre treino e teste
+
+```{r}
+
+set.seed(1608)
+
+part_data<-floor(0.75*nrow(data)) 
+
+treino_data <-sample(seq_len(nrow(data)), size = part_data)
+
+treino<-data[treino_data, ]
+
+teste<-data[-treino_data,]
+
+```
+
+
+### Modelo
+
+```{r}
+
+prev<-knn(treino[,-1], teste[,-1], cl=treino[,1],k=5)
+
+
+```
+### Acurácia
+
+```{r}
+
+matrix_conf<-table(teste[,1],prev)
+
+confusionMatrix(matrix_conf)
+
+```
+
+
