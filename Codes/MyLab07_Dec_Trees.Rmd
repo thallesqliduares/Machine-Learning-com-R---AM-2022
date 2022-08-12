@@ -1,0 +1,139 @@
+---
+title: "Lab07 - Arvores de Decisão"
+subtitle: "Machine Learning usando o R"
+author: "Thalles Quinaglia Liduares"
+date: "2022-08-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Upload base de dados
+
+```{r, warning=FALSE, message=FALSE}
+
+setwd("C:\\Program Files\\R\\Dados\\ML")
+
+data<-read.csv("credit.csv", stringsAsFactors = TRUE)
+
+attach(data)
+
+
+```
+
+### Upload pacotes
+
+```{r, warning=FALSE, message=FALSE}
+
+library(rpart)
+library(rpart.plot)
+library(caret)
+library(rattle)
+```
+
+### Analise exploratória dos dados
+
+```{r}
+
+table(default)
+
+```
+
+Indice de inadimplência igual a 30%.
+
+```{r}
+
+summary(months_loan_duration)
+
+```
+
+O tempo minimo e maximo de duração dos empréstimos é igual a 4 e 72 meses, respectivamente. O tempo médio
+de duração dos empréstimos é igual a 21 meses.
+
+
+```{r}
+summary(age)
+```
+A idade média dos individuos clientes do banco é igual a 36 anos.
+
+### Divisão da amostra entre treino e teste.
+
+```{r}
+
+set.seed(1608)
+
+part_data<-floor(0.75*nrow(data)) 
+
+treino_data <-sample(seq_len(nrow(data)), size = part_data)
+
+treino<-data[treino_data, ]
+
+teste<-data[-treino_data,]
+
+```
+
+### Modelo
+
+```{r}
+
+tree1<-rpart(default~., data = treino, method = "class")
+
+fancyRpartPlot(tree1)
+
+
+```
+
+
+
+
+
+
+### Validação
+
+
+```{r}
+
+pred_tree1<-predict(tree1, newdata=teste, type="class")
+
+```
+
+
+### Acurácia
+
+
+```{r}
+
+teste$default<-as.factor(teste$default)
+
+confusionMatrix(pred_tree1, teste$default)
+
+```
+
+O nível de acurácia da árvore de decisão é igual a 74.4\%.
+
+
+###  Àrvore podada 
+
+
+```{r}
+
+printcp(tree1)
+plotcp(tree1)
+summary(tree1)
+
+```
+
+### Acurácia com a àrvore podada
+
+```{r}
+
+pod_tree <- prune(tree1,cp=tree1$cptable[which.min(tree1$cptable[,"xerror"]),"CP"])
+pod_tree_fit <- predict(pod_tree,teste,type="class")
+table(pod_tree_fit,teste$default)
+mean(pod_tree_fit==teste$default)
+
+```
+
+Neste caso, o nivel de acurácia elevou-se para 74,8\%.
