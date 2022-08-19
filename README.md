@@ -1,3 +1,3 @@
 # Machine-Learning-com-R---AM-2022
 
-Curso Machine Learning com o R - Análise Macro 
+My solutions to the course _Machine Learning with R_ - Análise Macro 
