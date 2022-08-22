@@ -1,0 +1,145 @@
+---
+title: "Lab08 - Previsão com Regressão Linear"
+subtitle: "Machine Learning com o R - Análise Macro"
+author: "Thalles Quinaglia Liduares"
+date: "2022-08-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Upload database 
+
+```{r, warning=FALSE, message=FALSE}
+
+setwd("C:\\Program Files\\R\\Dados\\ML")
+
+data<-read.csv("insurance.csv", stringsAsFactors = T)
+
+attach(data)
+
+
+```
+
+
+### Upload packages
+
+```{r, warning=FALSE, message=FALSE}
+
+library(GGally)
+library(ggpubr)
+library(olsrr)
+
+```
+
+### Análise dos dados
+
+```{r}
+summary(data)
+```
+
+### Analise de correlação das variaveis numéricas
+
+```{r}
+
+data %>%
+GGally::ggpairs(c(1,3,7))
+
+```
+
+
+
+### Histograma dos gastos médicos
+
+```{r}
+
+ht <- gghistogram(data, x = "expenses", bins=9, xlab ="Valor", ylab="Ocorrencias")
+
+ggarrange(ht)
+
+```
+
+
+
+
+### Particionando a amostra entre treino e teste
+
+```{r}
+
+set.seed(1608)
+
+part_data<-floor(0.80*nrow(data)) 
+
+treino_data <-sample(seq_len(nrow(data)), size = part_data)
+
+treino<-data[treino_data, ]
+
+teste<-data[-treino_data,]
+
+```
+
+### Modelo com todas variaveis do dataset
+
+```{r}
+
+lm1<-lm(expenses~.,treino)
+
+summary(lm1)
+
+```
+
+### Previsão e acurácia  do modelo 
+
+```{r}
+
+teste$prev1<-predict(lm1, newdata=teste)
+
+teste$prev_acc<-round(teste$prev1/teste$expenses,2)
+
+teste$prev_acc<-teste$prev_acc-1
+
+teste$prev_acc<-abs(teste$prev_acc)
+
+summary(teste$prev_acc)
+
+```
+Como há um valor minimo igual a 0, houve pelo menos um caso onde o modelo previu com
+100% de acurácia o valor dos gastos médicos.
+
+### Porcentagem do erro médio absoluto
+
+```{r}
+
+erro_médio<-round(mean(abs(lm1$residuals)/treino$expenses)*100,2)
+
+erro_médio
+
+```
+### Teste de normalidade dos resíduos 
+
+```{r}
+ols_test_normality(lm1)
+```
+
+                 
+
+
+Com base no teste de Kolmogorov-Smirnov, rejeita-se a hipótese nula de que os 
+residuos seguem uma distribuição normal. Portanto, a inferência estatistisca do
+modelo fica prejudicada.
+
+
+### Versão 2: Sem inclusão da variável `region`
+
+```{r}
+lm2<-lm(expenses~.-region,treino)
+```
+
+```{r}
+ols_test_normality(lm2)
+```
+
+Os resíduos permanecem não seguindo uma distribuição normal. Portanto, recomenda-se
+cautela na interpretação dos resultados obtidos.
