@@ -1,0 +1,77 @@
+---
+title: "Lab09 - Redes Neurais"
+author: "Thalles Quinaglia Liduares"
+subtitle: "Machine Learning usando o R - Análise Macro"
+date: "2022-08-19"
+output: html_document
+---
+
+### Upload base de dados
+
+
+```{r, warning=FALSE, message=FALSE}
+
+setwd("C:\\Program Files\\R\\Dados\\ML")
+
+data<-read.csv("concrete.csv")
+
+attach(data)
+
+```
+
+
+### Upload pacotes
+
+```{r, warning=FALSE, message=FALSE}
+
+library(neuralnet)
+
+```
+### Normalização dos dados
+
+```{r}
+
+data[,1:9]<-scale(data[,1:9])
+
+```
+
+### Particionando a amostra entre treino e teste
+
+```{r}
+
+set.seed(1608)
+
+part_data<-floor(0.80*nrow(data)) 
+
+treino_data <-sample(seq_len(nrow(data)), size = part_data)
+
+treino<-data[treino_data, ]
+
+teste<-data[-treino_data,]
+
+```
+
+### Treinando a rede neural 
+
+```{r}
+
+netn1<-neuralnet(strength~.,treino, hidden=5)
+
+plot(netn1)
+
+                
+```
+
+
+
+### Análise preditiva do modelo
+
+```{r}
+mod.res<-compute(netn1, teste[1:8])
+
+mod.prev<-mod.res$net.result
+
+cor(mod.prev,teste$strength)[,1]
+```
+Com 5 camadas ocultas, o modelo de rede neural proposto apresenta correlação
+igual a 93\%.
