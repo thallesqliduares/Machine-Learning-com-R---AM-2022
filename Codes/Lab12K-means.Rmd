@@ -1,0 +1,142 @@
+---
+title: "Lab12 - Clustering"
+subtitle: " Machine Learning usando o R - Análise Macro"
+author: "Thalles Quinaglia Liduares"
+date: "2022-08-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Upload base de dados
+
+```{r, warning=FALSE, message=FALSE}
+
+setwd("C:\\Program Files\\R\\Dados\\ML")
+
+data<-read.csv("snsdata.csv")
+
+attach(data)
+
+```
+
+### Upload pacotes
+
+```{r, warning=FALSE, message=FALSE}
+
+library(tidyverse)
+library(gridExtra)
+
+```
+
+
+### Análise dos dados
+
+```{r}
+
+str(data)
+
+summary(data)
+
+```
+
+
+### Tratamento dos valores faltantes
+
+```{r}
+
+val.medio = ave(data$age, data$gradyear,
+FUN = function(x) mean(x, na.rm = TRUE))
+data$age = ifelse(is.na(data$age), val.medio, data$age)
+
+```
+
+```{r}
+interesses = data[5:40]
+interesses1= as.data.frame(lapply(interesses, scale))
+```
+
+### Calculo do k ótimo
+
+
+```{r, warning=FALSE, message=FALSE}
+
+btw=numeric()
+tws=numeric()
+
+set.seed(2708)
+
+for(i in 1:10){
+  btw[i]=kmeans(interesses1, centers = i, iter.max = 30)$betweenss
+  tws[i]=kmeans(interesses1, centers = i, iter.max = 30)$tot.withinss
+}
+
+
+```
+
+```{r}
+
+k=qplot(1:10, btw, geom=c("point","line"),
+        xlab= "Numero de clusters",
+        ylab = "Soma dos quadrados")+
+        scale_x_continuous(breaks = seq(0,10,1))+
+        theme_bw()
+
+kk=qplot(1:10, tws, geom=c("point","line"),
+         xlab= "Numero de clusters",
+         ylab = "Soma dos quadrados dentro do cluster")+
+         scale_x_continuous(breaks = seq(0,10,1))+
+         theme_bw()
+```
+
+### Analise gráfica
+
+```{r}
+grid.arrange(k,kk,ncol=2)
+```
+
+Com base no plot acima, percebe-se que a partir do cluster k=5, os valores passam
+a decrescer de forma mais parcimoniosa. Portanto, a escolha ótima é igual a k=5. 
+
+### Calculo do k-means com k=5
+
+```{r}
+
+mod.k5<-kmeans(interesses1, centers = 5)
+
+```
+
+
+### Previsão do modelo com os valores médios para cada cluster
+
+
+```{r}
+
+prev<-mod.k5$cluster
+
+aggregate(interesses1,by=list(prev),mean)
+
+```
+
+
+### Clustering do modelo
+
+```{r}
+
+### O plot da erro com todas as colunas, pois fica muito grande. Com 20 colunas
+
+
+
+plot(interesses1[,1:20],col=prev)
+
+```
+
+
+
+
+
+
+
+
