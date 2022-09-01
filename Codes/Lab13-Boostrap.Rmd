@@ -1,0 +1,138 @@
+---
+title: "Lab13 - Cross Validation e Bootstrap na prática"
+subtitle: "Machine Learning usando o R - Análise Macro"
+author: "Thalles Quinaglia Liduares"
+date: "2022-09-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Irei utilizar o dataset `wage1` do pacote `wooldridge` para modelar o retorno salarial em função dos anos de educação dos individuos.
+
+### Upload pacotes
+
+```{r}
+
+library(wooldridge)
+library(boot)
+```
+
+
+### Upload base de dados
+
+
+```{r, warning=FALSE, message=FALSE}
+
+data<-wooldridge::wage1
+
+attach(data)
+
+```
+
+Partição da amostra em treino e teste
+
+```{r}
+
+treino<-sample(526, 421)
+
+```
+
+Modelo simples 
+
+```{r}
+
+mod1<-lm(lwage~educ, data, subset = treino)
+
+summary(mod1)
+```
+
+
+```{r}
+
+mean((lwage-predict(mod1, data))[-treino]^2)
+
+```
+
+Modelo quadratico
+
+
+```{r}
+mod2<-lm(lwage~poly(educ,2), data, subset=treino)
+
+summary(mod2)
+```
+
+EQM modelo 2
+
+```{r}
+mean((lwage-predict(mod2,data))[-treino]^2)
+```
+
+Modelo cubico
+
+```{r}
+
+mod3<-lm(lwage~poly(educ,3), data, subset=treino)
+
+summary(mod3)
+
+```
+
+EQM modelo cubico
+
+```{r}
+
+mean((lwage-predict(mod3, data))[-treino]^2)
+
+```
+
+O modelo que performa o menor EQM é o quadratico.
+
+#### k-fold cross validation
+
+```{r}
+
+set.seed(3108)
+
+v_erro_10<-rep(0,10)
+
+for (i in 1:10){
+  glm.fit=glm(lwage~poly(educ,i),data=data)
+  v_erro_10[i]=cv.glm(data,glm.fit, K=10)$delta[1]
+}
+
+v_erro_10
+
+```
+
+
+
+O modelo quadrático apresenta um EQM relativamente baixo em relaçao aos demais e 
+menos complexo em termos de interpretabilidade dos coeficientes, portanto é o modelo escolhido.
+
+#### Bootstrap
+
+```{r}
+
+boot.fn=function(data,index)
+return(coef(lm(lwage~educ,data=data,subset=index)))
+boot.fn(data,1:526)
+
+```
+```{r}
+
+set.seed(0109)
+
+boot.fn(data,sample(526,526,replace=T))
+
+```
+
+```{r}
+
+boot(data,boot.fn,1000)
+
+```
+
