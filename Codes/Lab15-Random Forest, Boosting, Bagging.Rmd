@@ -1,0 +1,170 @@
+---
+title: "Lab15 - Random Forest, Bagging e Boosting"
+subtitle: " Machine Learning usando o R - Análise Macro"
+author: "Thalles Quinaglia Liduares"
+date: "2022-09-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Upload pacotes
+
+```{r, warning=FALSE, message=FALSE}
+
+library(randomForest)
+library(MASS)
+
+```
+
+Upload database
+
+```{r}
+data<-Boston
+```
+
+
+Divisão da amostra entre treino e teste
+
+```{r}
+
+set.seed(0809)
+
+train = sample(1:nrow(Boston), nrow(Boston)/2)
+```
+
+Modelo RandomForest
+
+```{r}
+
+set.seed(080922)
+
+bag.boston = randomForest(medv~.,data,
+             subset=train,mtry=13,importance=TRUE)
+
+bag.boston
+
+```
+
+Analise preditiva do modelo 
+
+
+```{r}
+
+yhat.bag = predict(bag.boston,newdata=Boston[-train,])
+boston.test=Boston[-train,"medv"]
+
+```
+
+EQM 
+
+```{r}
+
+mean((yhat.bag-boston.test)^2) 
+
+```
+
+
+Alteração do modelo para `ntree`=30
+
+```{r}
+
+set.seed(30)
+
+bag.boston=randomForest(medv~.,data=Boston,subset=train,mtry=13,ntree=30)
+yhat.bag = predict(bag.boston,newdata=Boston[-train,])
+mean((yhat.bag-boston.test)^2)
+
+```
+
+Com `ntree`=30 o EQM cai de 22.99 para 11.53
+
+Reestimando modelo com numero menor de preditores
+
+```{r}
+
+set.seed(30)
+
+rf.boston = randomForest(medv~.,data=Boston,
+          subset=train,mtry=7,importance=TRUE)
+
+yhat.rf = predict(rf.boston,newdata=Boston[-train,])
+
+mean((yhat.rf-boston.test)^2)
+
+```
+O EQM cai de 19.62 para 10.16.
+
+Calculo da importancia de cada umas das variaveis
+
+```{r}
+
+importance(rf.boston)
+
+```
+
+Impureza do nó, medido pelo RSS 
+
+```{r}
+varImpPlot(rf.boston)
+```
+
+#### Boosting
+
+```{r}
+
+library(gbm)
+
+set.seed(111)
+
+boost.boston = gbm(medv~.,data=Boston[train,],
+              distribution="gaussian",n.trees=5200,interaction.depth=4) # 5200 arvores
+
+summary(boost.boston)
+
+```
+
+
+Efeito marginal das variaveis do modelo 
+
+```{r}
+
+par(mfrow=c(1,2))
+plot(boost.boston,i="rm")
+
+```
+
+```{r}
+plot(boost.boston,i="lstat")
+```
+
+
+
+
+Analise preditiva do modelo e EQM
+
+
+```{r}
+yhat.boost=predict(boost.boston,newdata=Boston[-train,],n.trees=5200)
+mean((yhat.boost-boston.test)^2)
+```
+
+Com `ntrees`=5200 o EQM cai de 18.84 para 13.22.
+
+
+Parâmetro de encolhimento _shrinkage_
+
+```{r}
+
+boost.boston = gbm(medv~.,data=Boston[train,],
+          distribution="gaussian",n.trees=5200,
+          interaction.depth=4,shrinkage=0.3,verbose=F)
+
+yhat.boost = predict(boost.boston,newdata=Boston[-train,],n.trees=5200)
+
+mean((yhat.boost-boston.test)^2)
+
+```
+
